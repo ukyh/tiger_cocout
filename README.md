@@ -1,17 +1,79 @@
-# Image Caption Evaluation
-This repository provides an **image-oriented evaluation tool** for image captioning systems based on our two EMNLP-IJCNLP 2019 papers, which provides an alternative method beyond **lexicon-based** metrics such as BLEU-4, METEOR, CIDEr, and SPICE.
+<!-- # Image Caption Evaluation
+This repository provides an **image-oriented evaluation tool** for image captioning systems based on our two EMNLP-IJCNLP 2019 papers, which provides an alternative method beyond **lexicon-based** metrics such as BLEU-4, METEOR, CIDEr, and SPICE. -->
 
-## Text-to-Image Grounding for Evaluation (TIGEr)
-Here is the PyTorch code for TIGEr described in the paper ["TIGEr: Text-to-Image Grounding for Image Caption Evaluation"](https://www.aclweb.org/anthology/D19-1220.pdf). The metric is built upon a pretrained image-text matching model: [SCAN](http://www.dropwizard.io/1.0.2/docs/).
+<!-- ## Text-to-Image Grounding for Evaluation (TIGEr)
+Here is the PyTorch code for TIGEr described in the paper ["TIGEr: Text-to-Image Grounding for Image Caption Evaluation"](https://www.aclweb.org/anthology/D19-1220.pdf). The metric is built upon a pretrained image-text matching model: [SCAN](http://www.dropwizard.io/1.0.2/docs/). -->
 
-### Installation
+# Text-to-Image Grounding for Evaluation (TIGEr)
+
+The code for `TIGEr` evaluation of our paper, **[Switching to Discriminative Image Captioning by Relieving a Bottleneck of Reinforcement Learning](https://github.com/ukyh/switch_disc_caption.git)** (WACV 2023).
+
+### Acknowledgment
+The code is based on [CapEval](https://github.com/SeleenaJM/CapEval).
+We thank the authors of the repository.
+
+
+## Setup
+
+```bash
+git clone --recurse-submodules https://github.com/ukyh/tiger_cocout.git
+cd tiger_cocout
+
+conda create --name tiger python=2.7
+conda activate tiger
+
+conda install pytorch=0.4.1 cuda92 -c pytorch
+conda install -c pytorch torchvision
+conda install -c anaconda nltk
+python -c "import nltk; nltk.download('punkt')"
+conda install -c anaconda scipy
+echo "" >> SCAN/__init__.py
+```
+
+
+## Downloads
+
+See the following page for the details: https://github.com/SeleenaJM/CapEval#download-data-and-pretrained-scan-model
+
+```bash
+pip install gdown
+mkdir -p data/precomp/usecase_coco_precomp
+mkdir data/candidates
+mkdir data/output
+mkdir -p runs/coco_scan/log/model_best.pth
+cd data/precomp/usecase_coco_precomp
+gdown --fuzzy 'https://drive.google.com/file/d/1BCKOOZQLbxSIV9EwQFe77aM9McQsq-bH/view?usp=share_link'
+gdown --fuzzy 'https://drive.google.com/file/d/1xuJsjR98nqJli9nldBhrbLm1nxe9ziGs/view?usp=share_link'
+gdown --fuzzy 'https://drive.google.com/file/d/1gDe3G0gh_FbXFun3CPY1NT-PH761QtoJ/view?usp=share_link'
+cd ${HOME}/TIGEr/runs/coco_scan/log/
+gdown --fuzzy 'https://drive.google.com/file/d/1MbTqWVsl5QGbjRL5ClmY3Ns7uC7lJkSt/view?usp=share_link'
+```
+
+## Run
+
+Copy the output files to evaluate from [switch_disc_caption](https://github.com/ukyh/switch_disc_caption) (the files under `eval_results`).  
+Then, run the following commands.
+
+```bash
+cd tiger_cocout
+conda activate tiger
+
+ID=sample_test
+python -u preprocess_output.py eval_results/${ID}.json
+python -u main.py --data_name usecase_coco_precomp --data_path $PWD/data/precomp/ --candidate_path $PWD/data/candidates --candidate_name ${ID} --output_path $PWD/data/output/
+```
+
+
+<!-- ### Installation
 Prerequisites (installed by "install_requirement.sh"):
 * Python 2.7
 * PyTorch 0.4.1
 * cuda & cudnn
 ```bash
-git clone --recurse-submodules -j8 https://github.com/SeleenaJM/CapEval.git
-cd CapEval && bash install_requirement.sh
+# git clone --recurse-submodules -j8 https://github.com/SeleenaJM/CapEval.git
+# cd CapEval && bash install_requirement.sh
+git clone --recurse-submodules https://github.com/ukyh/TIGEr.git
+cd TIGEr && bash install_requirement.sh
 source activate tiger
 ```
 
@@ -48,11 +110,19 @@ imgid caption TIGER
 1253095131	a group of people are walking down a street .	0.662261698141
 4661097013	a guy sitting with his arms crossed with a brunette on his left .	0.63660359163
 4972129585	a man in a white shirt is sitting in a chair with a woman in a white shirt .	0.630412890176
-```
+``` -->
 
-### Reference
-If you find this code is useful, we appreicate it if you cite our [EMNLP-IJCNLP19 paper](https://www.aclweb.org/anthology/D19-1220):
+## Reference
+
+If you find this code is useful, we appreicate it if you cite the following papers:
 ```
+@inproceedings{honda2023switch,
+    title={Switching to Discriminative Image Captioning by Relieving a Bottleneck of Reinforcement Learning},
+    author={Honda, Ukyo and Taro, Watanabe and Yuji, Matsumoto},
+    booktitle={Proceedings of the IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+    year={2023}
+  }
+
 @inproceedings{jiang-etal-2019-tiger,
     title = "{TIGE}r: Text-to-Image Grounding for Image Caption Evaluation",
     author = "Jiang, Ming and Huang, Qiuyuan and Zhang, Lei and Wang, Xin and Zhang, Pengchuan and Gan, Zhe and Diesner, Jana  and Gao, Jianfeng",
@@ -67,7 +137,7 @@ If you find this code is useful, we appreicate it if you cite our [EMNLP-IJCNLP1
 }
 ```
 
-## Relevance, Extraness, Omission (REO)
+<!-- ## Relevance, Extraness, Omission (REO)
 In this work, we present a fine-grained evaluation method REO for automatically measuring the performance of image captioning systems. REO assesses the quality of captions from three perspectives: 1) Relevance to the ground truth, 2) Extraness of the content that is irrelevant to the ground truth, and 3) Omission of the elements in the images and human references.
 
 ### Code
@@ -88,4 +158,4 @@ If you find this code is useful, we appreicate it if you cite our [EMNLP-IJCNLP1
     doi = "10.18653/v1/D19-1156",
     pages = "1475--1480",
 }
-```
+``` -->

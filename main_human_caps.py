@@ -7,7 +7,7 @@ import logging
 
 import data_util
 from model_util import cap2img_grounding
-from tiger import Evaluator, encode_cands
+from tiger_human_caps import Evaluator, encode_cands
 
 from SCAN.data import get_test_loader
 from SCAN.vocab import Vocabulary, deserialize_vocab
@@ -90,7 +90,7 @@ def get_gts(model, scan_opt, split_name, val_loader):
         item['emb'] = ref_embs[k]
         item['len'] = ref_lens[k]
         item['string'] = ref_strings[k]
-        gts_ref[imgid].append(item)
+        gts_ref[imgid].append(item) # {imgid:[{item}, ...], ...}
     del img_embs, ref_embs, ref_lens, ref_strings, imgids
     torch.cuda.empty_cache()
     return gts_img, gts_ref

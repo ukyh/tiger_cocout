@@ -13,6 +13,10 @@ from model_util import cands_forward_emb, cap2img_grounding
 from data_util import cap2imgid, flickr8k_imgname2idx
 from SCAN.model import SCAN
 
+import random
+random.seed(123)
+
+
 class Evaluator(object):
     def __init__(self, data_path, data_name, split_name, vocab, scan_opt_path='./scan_opt.pkl', candidate_name=""):
         # load pre-trained scan model      
@@ -54,6 +58,7 @@ class Evaluator(object):
         else:
             scores = {}
 
+        assert len(cands) == 5000
         for imgid in cands.keys():
             if self.scan_opt.data_name.startswith('composite_8k') or self.scan_opt.data_name.startswith('flickr8k'):
                 sudo_imgid = ref_imgids[ref_imgnames.index(imgid)]
@@ -62,13 +67,23 @@ class Evaluator(object):
             else:
                 imgfeat = Variable(torch.from_numpy(gts_img[imgid]), volatile=True).cuda()
                 refs = gts_ref[imgid]
-            caps = cands[imgid]
+            # gts_ref: {imgid:[{item}, ...], ...}
+            # refs: [{item}, ...]
+            rand_idx = random.randint(0, len(refs) - 1)
+            caps = [refs[rand_idx]]   # [{item}]
+            # caps = cands[imgid]
+            # print("imgfeat", imgfeat.size())  # imgfeat: (36, 1024) for a single image
+            # print(imgfeat)
+            # print("refs", len(refs))
+            # print(refs)
             refs_sim = []
-            for r in refs:
-                rcap = Variable(torch.from_numpy(r['emb']), volatile=True).cuda()
-                rlen = r['len']
-                rsim = cap2img_grounding(imgfeat, rcap, rlen, self.scan_opt)
-                refs_sim.append(rsim)
+            for ix, r in enumerate(refs):
+                if ix != rand_idx:
+                    rcap = Variable(torch.from_numpy(r['emb']), volatile=True).cuda()
+                    rlen = r['len']
+                    rsim = cap2img_grounding(imgfeat, rcap, rlen, self.scan_opt)
+                    refs_sim.append(rsim)
+            assert len(refs_sim) == (len(refs) - 1)
             #Randomly sample k references (k = ref_sample)
             if ref_sample:
                 refs_sim = random.sample(refs_sim, ref_sample)
@@ -112,10 +127,11 @@ class Evaluator(object):
                         scores[c['pairid']]['C_string'] = c['string']
                         scores[c['pairid']]['C_score'] = tiger_score                    
         if output_dir:
-            if self.candidate_name != "":
-                file_name = self.scan_opt.data_name.replace('_precomp', '_{}'.format(self.candidate_name))
-            else:
-                file_name = self.scan_opt.data_name.replace('_precomp', '_score')
+            # if self.candidate_name != "":
+            #     file_name = self.scan_opt.data_name.replace('_precomp', '_{}'.format(self.candidate_name))
+            # else:
+            #     file_name = self.scan_opt.data_name.replace('_precomp', '_score')
+            file_name = "human_caps_score"
             self.print_score(scores, output_dir, file_name, ref_sample)
 
 
@@ -128,42 +144,51 @@ class Evaluator(object):
             output_file = os.path.join(output_dir, file_name+'.csv')
         if not os.path.exists(output_file):
             f=open(output_file, 'a+')
-            if file_name.startswith('usecase'):
-                f.write("imgid\tcaption\tTIGER\n")
-            elif file_name.startswith('composite'):
-                f.write("imgid\tcaption\tTIGER\tHUMAN\n")
-            elif file_name.startswith('flickr8k'):
-                f.write("imgid\tcaption\tTIGER\tHUMAN 1\tHUMAN 2\tHUMAN 3\n")
-            else:
-                f.write("imgid\tpair type\tcaption B\tcaption C\tTIGER B\tTIGER C\tTIGER Pariwise\tHUMAN Pairwise\n")
+            # if file_name.startswith('usecase'):
+            #     f.write("imgid\tcaption\tTIGER\n")
+            # elif file_name.startswith('composite'):
+            #     f.write("imgid\tcaption\tTIGER\tHUMAN\n")
+            # elif file_name.startswith('flickr8k'):
+            #     f.write("imgid\tcaption\tTIGER\tHUMAN 1\tHUMAN 2\tHUMAN 3\n")
+            # else:
+            #     f.write("imgid\tpair type\tcaption B\tcaption C\tTIGER B\tTIGER C\tTIGER Pariwise\tHUMAN Pairwise\n")
+            f.write("imgid\tcaption\tTIGER\n")
         else:
             #f = open(output_file, 'a+')
             print(file_name, 'exists! Please delete the file!')
         
         towrite = ''
         
-        if file_name.startswith('usecase'):
-            overall_tigerscore = 0.0
-            for item in scores:
-                towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) + '\n'
-                overall_tigerscore += item[2]
-            overall_tigerscore = 1.0*overall_tigerscore/len(scores)
-            print('\n\nThe overall system score is: ', str(overall_tigerscore))
-        elif file_name.startswith('composite'):
-            for item in scores:
-                towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) +'\t'+ str(item[3]) + '\n'
-        elif file_name.startswith('flickr8k'):
-            for item in scores:
-                towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) +'\t'+ str('\t'.join(item[3])) + '\n'
-        elif file_name.startswith('pascal'):
-            for k,v in scores.items():
-                if v['B_score'] > v['C_score']:
-                    pairwise_result = 'B' 
-                elif v['B_score'] < v['C_score']:
-                    pairwise_result = 'C'
-                else:
-                    pairwise_result = 'Equal'
-                towrite += str(v['imgid']) +'\t'+ str(v['pairtype']) +'\t'+ str(v['B_string']) +'\t'+ str(v['C_string']) +'\t'+ str(v['B_score']) +'\t'+ str(v['C_score']) +'\t'+ str(pairwise_result) +'\t'+ str(v['eval']) +'\n'
+        # if file_name.startswith('usecase'):
+        #     overall_tigerscore = 0.0
+        #     for item in scores:
+        #         towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) + '\n'
+        #         overall_tigerscore += item[2]
+        #     overall_tigerscore = 1.0*overall_tigerscore/len(scores)
+        #     print('\n\nThe overall system score is: ', str(overall_tigerscore))
+        # elif file_name.startswith('composite'):
+        #     for item in scores:
+        #         towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) +'\t'+ str(item[3]) + '\n'
+        # elif file_name.startswith('flickr8k'):
+        #     for item in scores:
+        #         towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) +'\t'+ str('\t'.join(item[3])) + '\n'
+        # elif file_name.startswith('pascal'):
+        #     for k,v in scores.items():
+        #         if v['B_score'] > v['C_score']:
+        #             pairwise_result = 'B' 
+        #         elif v['B_score'] < v['C_score']:
+        #             pairwise_result = 'C'
+        #         else:
+        #             pairwise_result = 'Equal'
+        #         towrite += str(v['imgid']) +'\t'+ str(v['pairtype']) +'\t'+ str(v['B_string']) +'\t'+ str(v['C_string']) +'\t'+ str(v['B_score']) +'\t'+ str(v['C_score']) +'\t'+ str(pairwise_result) +'\t'+ str(v['eval']) +'\n'
+        
+        overall_tigerscore = 0.0
+        for item in scores:
+            towrite += str(item[0]) +'\t'+ str(item[1]) +'\t'+ str(item[2]) + '\n'
+            overall_tigerscore += item[2]
+        overall_tigerscore = 1.0*overall_tigerscore/len(scores)
+        print('\n\nThe overall system score is: ', str(overall_tigerscore))
+
         f.write(towrite)
         f.close()
 

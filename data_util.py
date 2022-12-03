@@ -113,7 +113,7 @@ def read_usecase(vocab, opt):
     imgids = []
     caps_tensor = []
     caps_string = []
-    with open(os.path.join(opt.candidate_path, 'usecase', 'output_cap.txt')) as f:
+    with open(os.path.join(opt.candidate_path, opt.candidate_name, 'output_cap.txt')) as f:
         for line in f:
             item = line.strip().split('\t')
             imgid = item[0]
