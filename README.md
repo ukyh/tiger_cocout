@@ -37,15 +37,18 @@ See the following page for the details: https://github.com/SeleenaJM/CapEval#dow
 
 ```bash
 pip install gdown
+
 mkdir -p data/precomp/usecase_coco_precomp
 mkdir data/candidates
 mkdir data/output
-mkdir -p runs/coco_scan/log/model_best.pth
-cd data/precomp/usecase_coco_precomp
+mkdir -p runs/coco_scan/log
+
+cd ${HOME}/tiger_cocout/data/precomp/usecase_coco_precomp
 gdown --fuzzy 'https://drive.google.com/file/d/1BCKOOZQLbxSIV9EwQFe77aM9McQsq-bH/view?usp=share_link'
 gdown --fuzzy 'https://drive.google.com/file/d/1xuJsjR98nqJli9nldBhrbLm1nxe9ziGs/view?usp=share_link'
 gdown --fuzzy 'https://drive.google.com/file/d/1gDe3G0gh_FbXFun3CPY1NT-PH761QtoJ/view?usp=share_link'
-cd ${HOME}/TIGEr/runs/coco_scan/log/
+
+cd ${HOME}/tiger_cocout/runs/coco_scan/log
 gdown --fuzzy 'https://drive.google.com/file/d/1MbTqWVsl5QGbjRL5ClmY3Ns7uC7lJkSt/view?usp=share_link'
 ```
 
